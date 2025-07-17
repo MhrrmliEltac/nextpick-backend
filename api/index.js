@@ -27,5 +27,5 @@ app.use("/api/category", categoryRoutes);
 app.use("/api/brands", brandRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/info", infoRoutes);
-  
+
 export default app;
