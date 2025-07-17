@@ -28,4 +28,10 @@ app.use("/api/brands", brandRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/info", infoRoutes);
 
-module.exports = app;
+const PORT = 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server ise dusdu localhost:${PORT}`);
+});
+
+export default app;
