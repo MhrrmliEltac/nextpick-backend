@@ -10,6 +10,7 @@ import categoryRoutes from "./routes/category.routes.js";
 import brandRoutes from "./routes/brand.routes.js";
 import blogRoutes from "./routes/blog.routes.js";
 import infoRoutes from "./routes/info.routes.js";
+import subCategoryRoutes from "./routes/subcategory.routes.js";
 
 dotenv.config();
 connectDb();
@@ -32,6 +33,7 @@ app.use("/api/category", categoryRoutes);
 app.use("/api/brands", brandRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/info", infoRoutes);
+app.use("/api/subcategory", subCategoryRoutes);
 
 const PORT = 5000;
 

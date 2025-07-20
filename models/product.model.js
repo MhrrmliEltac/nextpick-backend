@@ -2,9 +2,16 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    description: { type: String },
+    productName: { type: String, required: true },
+    productDescription: { type: String },
     quantity: { type: Number, required: true },
+    image: { type: String },
+    price: { type: Number, required: true },
+    discount: { type: Boolean, required: true },
+    discountPercent: { type: Number },
+    discountPrice: { type: Number },
+    rating: { type: Number, required: true },
+    comment: { type: [Object] },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -15,8 +22,11 @@ const productSchema = new mongoose.Schema(
       ref: "Brands",
       required: true,
     },
-    image: { type: String },
-    price: { type: Number, required: true },
+    subcategory: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SubCategory",
+      required: false,
+    },
   },
   {
     timestamps: true,

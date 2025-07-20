@@ -1,24 +1,46 @@
+import Category from "../models/category.model.js";
 import Product from "../models/product.model.js";
+import SubCategoryModel from "../models/subcategory.model.js";
 
 export const createProduct = async (req, res) => {
   try {
-    const { title, description, price, category, brand, image, quantity } =
-      req.body;
+    const {
+      productName,
+      productDescription,
+      quantity,
+      image,
+      price,
+      discount,
+      discountPercent,
+      rating,
+      comment,
+      category,
+      brand,
+      subcategory,
+    } = req.body;
 
-    if (!title || !price) {
+    if (!productName || !price) {
       return res
         .status(400)
         .json({ message: "Title və Price boş buraxıla bilməz" });
     }
 
+    const discountPrice = price - (price * discountPercent) / 100;
+
     const newProduct = new Product({
-      title,
-      description,
+      productName,
+      productDescription,
+      quantity,
+      image,
       price,
+      discount,
+      discountPercent,
+      discountPrice: discountPrice,
+      rating,
+      comment,
       category,
       brand,
-      image,
-      quantity,
+      subcategory,
     });
 
     const savedProduct = await newProduct.save();
@@ -32,7 +54,8 @@ export const getAllProducts = async (req, res) => {
   try {
     const products = await Product.find()
       .populate("brand", "brandName")
-      .populate("category", "title");
+      .populate("category", "title")
+      .populate("subcategory", "subcategoryName");
 
     res.status(200).json(products);
   } catch (error) {
@@ -48,7 +71,10 @@ export const getOneProduct = async (req, res) => {
       return res.status(400).json({ message: "Id tapılmadı", error });
     }
 
-    const product = await Product.findById(id);
+    const product = await Product.findById(id)
+      .populate("brand", "brandName")
+      .populate("category", "title")
+      .populate("subcategory", "subcategoryName");
 
     if (!product) {
       return res.status(404).json({ error: "Məhsul tapılmadı" });
@@ -57,6 +83,51 @@ export const getOneProduct = async (req, res) => {
     res.status(200).json(product);
   } catch (error) {
     res.status(500).json({ message: "ID səhvdir və ya tapılmadı", error });
+  }
+};
+
+export const getProductsByCategory = async (req, res) => {
+  try {
+    const { title } = req.query;
+
+    const category = await Category.findOne({ title }).select("_id");
+    if (!category) {
+      return res.status(404).json({ message: "Category tapılmadı" });
+    }
+
+    const products = await Product.find({ category: category._id }).populate(
+      "category",
+      "title"
+    );
+
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: "Server xətası", error });
+  }
+};
+
+export const getProductBySubcategory = async (req, res) => {
+  try {
+    const { subCategoryName } = req.query;
+
+    if (!subCategoryName) {
+      return res.status(400).json({ message: "Alt kateqoriya tapılmadı" });
+    }
+
+    const subCategory = SubCategoryModel.findOne({ subCategoryName }).select(
+      "_id"
+    );
+
+    if (!subCategory) {
+      return res.status(404).json({ message: "Alt kateqoriya tapılmadı" });
+    }
+
+    const products = await Product.find({
+      subCategory: subCategory._id,
+    }).populate("subcategory", "subCategoryName");
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({ message: "Server xətası", error });
   }
 };
 
