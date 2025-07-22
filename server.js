@@ -11,6 +11,8 @@ import brandRoutes from "./routes/brand.routes.js";
 import blogRoutes from "./routes/blog.routes.js";
 import infoRoutes from "./routes/info.routes.js";
 import subCategoryRoutes from "./routes/subcategory.routes.js";
+import apiKeyRoutes from "./routes/apikey.routes.js";
+import { apiKeyMiddleware } from "./middleware/apiKeyMiddleware.js";
 
 dotenv.config();
 connectDb();
@@ -28,12 +30,13 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use("/api/products", productRoutes);
+app.use("/api/products", apiKeyMiddleware, productRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/brands", brandRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/info", infoRoutes);
 app.use("/api/subcategory", subCategoryRoutes);
+app.use("/api/apikey", apiKeyRoutes); 
 
 const PORT = 5000;
 

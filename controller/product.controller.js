@@ -25,7 +25,11 @@ export const createProduct = async (req, res) => {
         .json({ message: "Title və Price boş buraxıla bilməz" });
     }
 
-    const discountPrice = price - (price * discountPercent) / 100;
+    let discountPrice = 0;
+
+    if (discount && discountPercent !== 0) {
+      discountPrice = price - (price * discountPercent) / 100;
+    }
 
     const newProduct = new Product({
       productName,
@@ -52,13 +56,28 @@ export const createProduct = async (req, res) => {
 
 export const getAllProducts = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    const totalProducts = await Product.countDocuments();
+
     const products = await Product.find()
       .populate("brand", "brandName")
       .populate("category", "title")
-      .populate("subcategory", "subcategoryName");
+      .populate("subcategory", "subcategoryName")
+      .skip(skip)
+      .limit(limit);
 
-    res.status(200).json(products);
+    res.status(200).json({
+      products,
+      totalProducts,
+      totalPages: Math.ceil(totalProducts / limit),
+      currentPage: page,
+      limit,
+    });
   } catch (error) {
+    console.error("Product fetch error:", error);
     res.status(500).json({ message: "Məhsullar tapılmadı", error });
   }
 };
@@ -95,12 +114,22 @@ export const getProductsByCategory = async (req, res) => {
       return res.status(404).json({ message: "Category tapılmadı" });
     }
 
-    const products = await Product.find({ category: category._id }).populate(
-      "category",
-      "title"
-    );
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
 
-    res.status(200).json(products);
+    const totalProducts = await Product.countDocuments();
+
+    const products = await Product.find({ category: category._id })
+      .populate("category", "title")
+      .skip(skip)
+      .limit(limit);
+    res.status(200).json({
+      products,
+      totalPages: Math.ceil(totalProducts / limit),
+      currentPage: page,
+      limit,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server xətası", error });
   }
@@ -108,7 +137,7 @@ export const getProductsByCategory = async (req, res) => {
 
 export const getProductBySubcategory = async (req, res) => {
   try {
-    const { subCategoryName } = req.query;
+    const { subCategoryName, sortBy } = req.query;
 
     if (!subCategoryName) {
       return res.status(400).json({ message: "Alt kateqoriya tapılmadı" });
@@ -122,10 +151,46 @@ export const getProductBySubcategory = async (req, res) => {
       return res.status(404).json({ message: "Alt kateqoriya tapılmadı" });
     }
 
+    let sortOptions = {};
+
+    switch (sortBy) {
+      case "asc":
+        sortOptions = { price: 1 };
+        break;
+      case "desc":
+        sortOptions = { price: -1 };
+        break;
+      case "a-z":
+        sortOptions = { productName: 1 };
+        break;
+      case "z-a":
+        sortOptions = { productName: -1 };
+        break;
+      default:
+        sortOptions = { createdAt: -1 };
+        break;
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    const totalProducts = await Product.countDocuments();
+
     const products = await Product.find({
       subCategory: subCategory._id,
-    }).populate("subcategory", "subCategoryName");
-    res.status(200).json(products);
+    })
+      .sort(sortOptions)
+      .populate("subcategory", "subCategoryName")
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      products,
+      totalPages: Math.ceil(totalProducts / limit),
+      currentPage: page,
+      limit,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server xətası", error });
   }
