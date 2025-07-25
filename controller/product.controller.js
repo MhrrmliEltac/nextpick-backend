@@ -17,6 +17,7 @@ export const createProduct = async (req, res) => {
       category,
       brand,
       subcategory,
+      salesCount = 0,
     } = req.body;
 
     if (!productName || !price) {
@@ -45,6 +46,7 @@ export const createProduct = async (req, res) => {
       category,
       brand,
       subcategory,
+      salesCount,
     });
 
     const savedProduct = await newProduct.save();
@@ -94,6 +96,8 @@ export const getOneProduct = async (req, res) => {
       .populate("brand", "brandName")
       .populate("category", "title")
       .populate("subcategory", "subcategoryName");
+
+    console.log(product);
 
     if (!product) {
       return res.status(404).json({ error: "Məhsul tapılmadı" });
@@ -192,6 +196,49 @@ export const getProductBySubcategory = async (req, res) => {
       limit,
     });
   } catch (error) {
+    res.status(500).json({ message: "Server xətası", error });
+  }
+};
+
+export const getProductBySearchQuery = async (req, res) => {
+  try {
+    const search = req.query.search;
+
+    if (!search) {
+      return res
+        .status(400)
+        .json({ message: "Axtarış sorğusu boş ola bilməz" });
+    }
+
+    const filteredProducts = await Product.find({
+      productName: { $regex: search, $options: "i" },
+    });
+
+    res.status(200).json(filteredProducts);
+  } catch (error) {
+    res.status(500).json({ message: "Server xətası", error });
+  }
+};
+
+export const getBestSellerProduct = async (req, res) => {
+  try {
+    const { sortBy } = req.query;
+
+    if (!sortBy || !["asc", "desc"].includes(sortBy)) {
+      return res.status(400).json({
+        message: "Parametr düzgün ötürülməyib. asc və ya desc göndərin.",
+      });
+    }
+
+    const mostSalesProduct = await Product.find()
+      .sort({
+        salesCount: sortBy === "asc" ? 1 : -1,
+      })
+      .limit(10);
+
+    res.status(200).json(mostSalesProduct);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Server xətası", error });
   }
 };

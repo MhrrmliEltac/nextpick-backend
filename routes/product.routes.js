@@ -3,7 +3,9 @@ import {
   createProduct,
   deleteProduct,
   getAllProducts,
+  getBestSellerProduct,
   getOneProduct,
+  getProductBySearchQuery,
   getProductBySubcategory,
   getProductsByCategory,
   updateProduct,
@@ -15,6 +17,8 @@ router.post("/create", createProduct); // Məhsul yaradılması
 router.get("/list", getAllProducts); // Bütün məhsullar
 router.get("/productByCategory", getProductsByCategory); // Kateqoriyaya uyğun məhsullar
 router.get("/productBySubCategory", getProductBySubcategory); // Alt kateqoriyaya uyğun məhsullar
+router.get("/search", getProductBySearchQuery); // Search edilerken gelen mehsullar
+router.get("/best-seller", getBestSellerProduct); // Ən çox satılan məhsullar
 router.get("/:id", getOneProduct); // Bir məhsul
 router.put("/:id", updateProduct); // Yeniləmə
 router.delete("/:id", deleteProduct); // Silmə

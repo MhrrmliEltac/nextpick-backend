@@ -27,6 +27,7 @@ const productSchema = new mongoose.Schema(
       ref: "SubCategory",
       required: false,
     },
+    salesCount: { type: Number },
   },
   {
     timestamps: true,

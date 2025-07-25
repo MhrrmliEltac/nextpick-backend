@@ -1,0 +1,3 @@
+### GET request
+GET http://localhost:5000/api/products/687ec5c9f99e829758ad4eda
+x-api-key:1546-asde-4586-qwer
