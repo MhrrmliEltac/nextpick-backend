@@ -97,8 +97,6 @@ export const getOneProduct = async (req, res) => {
       .populate("category", "title")
       .populate("subcategory", "subcategoryName");
 
-    console.log(product);
-
     if (!product) {
       return res.status(404).json({ error: "Məhsul tapılmadı" });
     }
@@ -144,48 +142,40 @@ export const getProductBySubcategory = async (req, res) => {
     const { subCategoryName, sortBy } = req.query;
 
     if (!subCategoryName) {
-      return res.status(400).json({ message: "Alt kateqoriya tapılmadı" });
+      return res
+        .status(400)
+        .json({ message: "Alt kateqoriya adı tələb olunur" });
     }
 
-    const subCategory = SubCategoryModel.findOne({ subCategoryName }).select(
-      "_id"
-    );
+    const filter = {};
 
-    if (!subCategory) {
-      return res.status(404).json({ message: "Alt kateqoriya tapılmadı" });
+    if (subCategoryName.toLowerCase() !== "all laptop") {
+      const subCategory = await SubCategoryModel.findOne({
+        subcategoryName: subCategoryName,
+      });
+      if (!subCategory) {
+        return res.status(404).json({ message: "Alt kateqoriya tapılmadı" });
+      }
+
+      filter.subcategory = subCategory._id;
     }
 
-    let sortOptions = {};
-
-    switch (sortBy) {
-      case "asc":
-        sortOptions = { price: 1 };
-        break;
-      case "desc":
-        sortOptions = { price: -1 };
-        break;
-      case "a-z":
-        sortOptions = { productName: 1 };
-        break;
-      case "z-a":
-        sortOptions = { productName: -1 };
-        break;
-      default:
-        sortOptions = { createdAt: -1 };
-        break;
-    }
+    const sortOptions = {
+      asc: { price: 1 },
+      desc: { price: -1 },
+      "a-z": { productName: 1 },
+      "z-a": { productName: -1 },
+    }[sortBy] || { createdAt: -1 };
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
 
-    const totalProducts = await Product.countDocuments();
+    const totalProducts = await Product.countDocuments(filter);
 
-    const products = await Product.find({
-      subCategory: subCategory._id,
-    })
+    const products = await Product.find(filter)
       .sort(sortOptions)
-      .populate("subcategory", "subCategoryName")
+      .populate("subcategory", "subcategoryName")
       .skip(skip)
       .limit(limit);
 
@@ -196,7 +186,7 @@ export const getProductBySubcategory = async (req, res) => {
       limit,
     });
   } catch (error) {
-    res.status(500).json({ message: "Server xətası", error });
+    res.status(500).json({ message: "Server xətası", error: error.message });
   }
 };
 
