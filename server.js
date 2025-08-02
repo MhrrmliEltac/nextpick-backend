@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import connectDb from "./config/db.js";
 
 // import routes
+import authRoutes from "./routes/user.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import brandRoutes from "./routes/brand.routes.js";
@@ -30,13 +31,14 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/products", apiKeyMiddleware, productRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/brands", brandRoutes);
 app.use("/api/blog", blogRoutes);
 app.use("/api/info", infoRoutes);
 app.use("/api/subcategory", subCategoryRoutes);
-app.use("/api/apikey", apiKeyRoutes); 
+app.use("/api/apikey", apiKeyRoutes);
 
 const PORT = 5000;
 
