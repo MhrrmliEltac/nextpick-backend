@@ -28,37 +28,37 @@ export const generateOTP = () => {
 // send otp
 export const sendOTP = async (req, res) => {
   try {
-    const {email} = req.body;
+    const { email } = req.body;
 
-    const existingUser = await userModel.findOne({email});
+    const existingUser = await userModel.findOne({ email });
 
     if (existingUser) {
-
       if (existingUser.isVerified) {
         const hasFullInfo = existingUser.name && existingUser.password;
 
         if (!hasFullInfo) {
           return res.status(200).json({
-            message: "Email already verified. Proceed to complete registration.",
+            message:
+              "Email already verified. Proceed to complete registration.",
             proceedToSignUp: true,
-          })
+          });
         }
-        return res.status(400).json({message: "User already exist"});
+        return res.status(400).json({ message: "User already exist" });
       }
 
       const otp = generateOTP();
       existingUser.otp = otp;
       existingUser.otpExpiry = Date.now() + 10 * 60 * 1000;
-      await existingUser.save()
+      await existingUser.save();
 
       await transporter.sendMail({
         from: `"Verify Your Email" <meherremlieltac14@gmail.com>`,
         to: email,
         subject: `Your OTP Code is ${otp}`,
         text: `Your OTP Code is ${otp}`,
-      })
+      });
 
-      return res.status(200).json({message: "OTP resent to your email."})
+      return res.status(200).json({ message: "OTP resent to your email." });
     }
 
     const otp = generateOTP();
@@ -79,20 +79,20 @@ export const sendOTP = async (req, res) => {
       text: `Your OTP Code is ${otp}`,
     });
 
-    res.status(200).json({message: "OTP sent to your email."});
+    res.status(200).json({ message: "OTP sent to your email." });
   } catch (error) {
-    res.status(500).json({message: "Server error", error: error.message});
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 // verify otp
 export const verifyOTP = async (req, res) => {
   try {
-    const {email, otpCode} = req.body;
+    const { email, otpCode } = req.body;
 
-    const user = await userModel.findOne({email});
+    const user = await userModel.findOne({ email });
     if (!user || user.otpCode !== otpCode || Date.now() > user.otpExpiry) {
-      return res.status(400).json({message: "Invalid or expired OTP."});
+      return res.status(400).json({ message: "Invalid or expired OTP." });
     }
 
     // change user verified status
@@ -101,21 +101,21 @@ export const verifyOTP = async (req, res) => {
     user.otpExpiry = undefined;
     await user.save();
 
-    res.status(200).json({message: "Email verified successfully."});
+    res.status(200).json({ message: "Email verified successfully." });
   } catch (error) {
-    res.status(500).json({message: "Server error", error: error.message});
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 // user sign up
 export const signUp = async (req, res) => {
   try {
-    const {name, surname, phone, email, password, birthDate, role} = req.body;
+    const { name, surname, phone, email, password, birthDate, role } = req.body;
 
     if (!name || !email || !password) {
       return res
-          .status(400)
-          .json({message: "Name, email, and password are required."});
+        .status(400)
+        .json({ message: "Name, email, and password are required." });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -123,22 +123,22 @@ export const signUp = async (req, res) => {
       return res.status(400).json({ message: "Email format not valid" });
     }
 
-    const user = await userModel.findOne({email});
+    const user = await userModel.findOne({ email });
 
     if (!user) {
       return res
-          .status(400)
-          .json({message: "Email not verified. Please verify OTP first."});
+        .status(400)
+        .json({ message: "Email not verified. Please verify OTP first." });
     }
 
     if (!user.isVerified) {
       return res
-          .status(400)
-          .json({message: "Email not verified. Please verify OTP first."});
+        .status(400)
+        .json({ message: "Email not verified. Please verify OTP first." });
     }
 
     if (user.name && user.password) {
-      return res.status(400).json({message: "User already signed up."});
+      return res.status(400).json({ message: "User already signed up." });
     }
 
     const salt = bcrypt.genSaltSync(10);
@@ -153,12 +153,11 @@ export const signUp = async (req, res) => {
 
     await user.save();
 
-    res.status(201).json({message: "User signed up successfully", user});
+    res.status(201).json({ message: "User signed up successfully", user });
   } catch (error) {
-    res.status(500).json({message: "Server error", error: error.message});
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 // user sign in
 export const signIn = async (req, res) => {
@@ -178,7 +177,9 @@ export const signIn = async (req, res) => {
     }
 
     if (!user.isVerified) {
-      return res.status(400).json({message: "Email not verified. Please verify OTP first."});
+      return res
+        .status(400)
+        .json({ message: "Email not verified. Please verify OTP first." });
     }
 
     const isPasswordValid = bcrypt.compareSync(password, user.password);
@@ -196,32 +197,34 @@ export const signIn = async (req, res) => {
         role: user.role,
       },
       process.env.JWT_SECRET,
-        {
-          expiresIn: "15m",
-        }
+      {
+        expiresIn: "15m",
+      }
     );
 
     const refresh_token = jwt.sign(
-        {
-          id: user._id,
-        },
-        process.env.JWT_SECRET,
-        {
-          expiresIn: "3d",
-        }
+      {
+        id: user._id,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "3d",
+      }
     );
 
     // access token
     res.cookie("access_token", access_token, {
       httpOnly: true,
-      //   secure: true,
+      secure: true,
+      sameSite: "None",
       maxAge: 15 * 60 * 1000,
     });
 
     // refresh token
     res.cookie("refresh_token", refresh_token, {
       httpOnly: true,
-      //   secure: true,
+      secure: true,
+      sameSite: "None",
       maxAge: 15 * 60 * 1000,
     });
 
@@ -235,7 +238,7 @@ export const signIn = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({message: "Server error", error: error.message});
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -244,7 +247,7 @@ export const profile = async (req, res) => {
   try {
     res.status(200).json(req.user);
   } catch (error) {
-    res.status(500).json({message: "Server error", error: error.message});
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -253,31 +256,31 @@ export const refreshAccessToken = async (req, res) => {
     const refresh_token = req.cookies.refresh_token;
 
     if (!refresh_token) {
-      return res.status(401).json({message: "Refresh token missing."});
+      return res.status(401).json({ message: "Refresh token missing." });
     }
 
     jwt.verify(
-        refresh_token,
-        process.env.JWT_REFRESH_SECRET,
-        (err, decoded) => {
-          if (err)
-            return res.status(403).json({message: "Invalid refresh token."});
+      refresh_token,
+      process.env.JWT_REFRESH_SECRET,
+      (err, decoded) => {
+        if (err)
+          return res.status(403).json({ message: "Invalid refresh token." });
 
-          const access_token = jwt.sign(
-              {
-                id: decoded.id,
-              },
-              process.env.JWT_SECRET,
-              {
-                expiresIn: "15m",
-              }
-          );
+        const access_token = jwt.sign(
+          {
+            id: decoded.id,
+          },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: "15m",
+          }
+        );
 
-          res.cookie("access_token", access_token, cookieOptions);
-          res.status(200).json({message: "Access token refreshed."});
-        }
+        res.cookie("access_token", access_token, cookieOptions);
+        res.status(200).json({ message: "Access token refreshed." });
+      }
     );
   } catch (error) {
-    res.status(500).json({message: "Server error", error: error.message});
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
