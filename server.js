@@ -1,5 +1,4 @@
 import express from "express";
-import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
 import connectDb from "./config/db.js";
@@ -13,7 +12,8 @@ import blogRoutes from "./routes/blog.routes.js";
 import infoRoutes from "./routes/info.routes.js";
 import subCategoryRoutes from "./routes/subcategory.routes.js";
 import apiKeyRoutes from "./routes/apikey.routes.js";
-import { apiKeyMiddleware } from "./middleware/apiKeyMiddleware.js";
+import {apiKeyMiddleware} from "./middleware/apiKeyMiddleware.js";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 connectDb();
@@ -21,10 +21,12 @@ connectDb();
 const app = express();
 
 // Middleware
+app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://next-pick-commerce.vercel.app"],
+      origin: ["http://localhost:5173", "http://localhost:5174", "https://next-pick-commerce.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE"],
+      credentials: true,
   })
 );
 app.use(express.json({ limit: "10mb" }));

@@ -1,21 +1,23 @@
 import jwt from "jsonwebtoken";
 
-export const protect = async (req, res, next) => {
+// Middleware for protecting routes
+export const protect = (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies?.access_token;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
 
-    const token = authHeader.split(" ")[1];
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    req.user = decoded;
+    req.user = decoded; 
 
-    next(); // icazə ver, davam et
+    next();
   } catch (error) {
-    return res.status(401).json({ message: "Invalid token", error });
+    return res.status(401).json({
+      message: "Invalid or expired token",
+      error: error.message,
+    });
   }
 };

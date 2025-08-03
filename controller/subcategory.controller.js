@@ -20,7 +20,7 @@ export const createSubCategory = async (req, res) => {
       subCategory: savedSubCategory,
     });
   } catch (error) {
-    res.status(500).json({ message: "Server xətası", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -32,7 +32,7 @@ export const getAllSubCategories = async (req, res) => {
     );
     res.status(200).json(subcategories);
   } catch (error) {
-    res.status(500).json({ message: "Server xətası", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -50,7 +50,7 @@ export const getSubCategoryById = async (req, res) => {
 
     res.status(200).json(subcategory);
   } catch (error) {
-    res.status(500).json({ message: "Server xətası", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 export const getSubCategoriesByCategory = async (req, res) => {
@@ -67,7 +67,7 @@ export const getSubCategoriesByCategory = async (req, res) => {
 
     res.status(200).json(filtered);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -90,7 +90,7 @@ export const updateSubCategory = async (req, res) => {
       .status(200)
       .json({ message: "Alt kateqoriya yeniləndi", updatedSubCategory });
   } catch (error) {
-    res.status(500).json({ message: "Server xətası", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -105,6 +105,6 @@ export const deleteSubCategory = async (req, res) => {
 
     res.status(200).json({ message: "Alt kateqoriya silindi" });
   } catch (error) {
-    res.status(500).json({ message: "Server xətası", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };

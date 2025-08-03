@@ -133,7 +133,7 @@ export const getProductsByCategory = async (req, res) => {
       limit,
     });
   } catch (error) {
-    res.status(500).json({ message: "Server xətası", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -206,7 +206,7 @@ export const getProductBySearchQuery = async (req, res) => {
 
     res.status(200).json(filteredProducts);
   } catch (error) {
-    res.status(500).json({ message: "Server xətası", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -229,7 +229,7 @@ export const getBestSellerProduct = async (req, res) => {
     res.status(200).json(mostSalesProduct);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server xətası", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 

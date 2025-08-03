@@ -16,6 +16,6 @@ export const createApiKey = async (req, res) => {
       .status(201)
       .json({ message: "API key created successfully", savedApiKey });
   } catch (error) {
-    res.status(500).json({ message: "Server xətası", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
