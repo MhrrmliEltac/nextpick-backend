@@ -9,6 +9,7 @@ dotenv.config();
 const cookieOptions = {
   httpOnly: true,
   secure: true,
+  sameSite: "none",
   maxAge: 15 * 60 * 1000,
 };
 
@@ -47,7 +48,7 @@ export const sendOTP = async (req, res) => {
       }
 
       const otp = generateOTP();
-      existingUser.otp = otp;
+      existingUser.otpCode = otp;
       existingUser.otpExpiry = Date.now() + 10 * 60 * 1000;
       await existingUser.save();
 
@@ -81,7 +82,7 @@ export const sendOTP = async (req, res) => {
 
     res.status(200).json({ message: "OTP sent to your email." });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -90,7 +91,12 @@ export const verifyOTP = async (req, res) => {
   try {
     const { email, otpCode } = req.body;
 
+    console.log(email, otpCode);
+
     const user = await userModel.findOne({ email });
+
+    console.log(user);
+
     if (!user || user.otpCode !== otpCode || Date.now() > user.otpExpiry) {
       return res.status(400).json({ message: "Invalid or expired OTP." });
     }
@@ -103,7 +109,7 @@ export const verifyOTP = async (req, res) => {
 
     res.status(200).json({ message: "Email verified successfully." });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -121,6 +127,16 @@ export const signUp = async (req, res) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: "Email format not valid" });
+    }
+
+    // Password strength validation
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+      });
     }
 
     const user = await userModel.findOne({ email });
@@ -155,7 +171,7 @@ export const signUp = async (req, res) => {
 
     res.status(201).json({ message: "User signed up successfully", user });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -206,27 +222,17 @@ export const signIn = async (req, res) => {
       {
         id: user._id,
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_REFRESH_SECRET,
       {
         expiresIn: "3d",
       }
     );
 
     // access token
-    res.cookie("access_token", access_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-      maxAge: 15 * 60 * 1000,
-    });
+    res.cookie("access_token", access_token, cookieOptions);
 
     // refresh token
-    res.cookie("refresh_token", refresh_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-      maxAge: 15 * 60 * 1000,
-    });
+    res.cookie("refresh_token", refresh_token, cookieOptions);
 
     res.status(200).json({
       message: "Login successful",
@@ -238,19 +244,41 @@ export const signIn = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// user sign out
+export const signOut = async (req, res) => {
+  try {
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      sameSite: "None",
+      secure: true,
+    });
+
+    res.clearCookie("refresh_token", {
+      httpOnly: true,
+      sameSite: "None",
+      secure: true,
+    });
+
+    return res.status(200).json({ message: "Signed out" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 // user profile
 export const profile = async (req, res) => {
   try {
-    res.status(200).json(req.user);
+    res.status(200).json({ success: true, user: req.user });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
+// refresh access token
 export const refreshAccessToken = async (req, res) => {
   try {
     const refresh_token = req.cookies.refresh_token;
@@ -270,7 +298,7 @@ export const refreshAccessToken = async (req, res) => {
           {
             id: decoded.id,
           },
-          process.env.JWT_SECRET,
+          process.env.JWT_REFRESH_SECRET,
           {
             expiresIn: "15m",
           }
@@ -281,6 +309,134 @@ export const refreshAccessToken = async (req, res) => {
       }
     );
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// forgot password
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const otp = generateOTP();
+    user.otpCode = otp;
+    user.otpExpiry = Date.now() + 10 * 60 * 1000;
+    await user.save();
+
+    await transporter.sendMail({
+      from: `"Forgot Password" <meherremlieltac14@gmail.com>`,
+      to: email,
+      subject: `Your OTP Code is ${otp}`,
+      text: `Your OTP Code is ${otp}`,
+    });
+
+    res.status(200).json({ message: "OTP sent to your email." });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// verify otp for forgot password
+export const verifyOTPForForgotPassword = async (req, res) => {
+  try {
+    const { email, otpCode } = req.body;
+
+    const user = await userModel.findOne({ email });
+
+    if (!user || user.otpCode !== otpCode || Date.now() > user.otpExpiry) {
+      return res.status(400).json({ message: "Invalid or expired OTP." });
+    }
+
+    // Generate a reset token (JWT is self-contained)
+    const resetToken = jwt.sign(
+      { email: user.email, type: "password_reset" },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    // Clear OTP after successful verification
+    user.otpCode = undefined;
+    user.otpExpiry = undefined;
+    await user.save();
+
+    // Set reset token as secure cookie
+    res.cookie("reset_token", resetToken, cookieOptions);
+
+    res.status(200).json({
+      message: "OTP verified successfully.",
+      success: true,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// reset password
+export const resetPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const resetToken = req.cookies.reset_token;
+
+    if (!resetToken || !password) {
+      return res.status(400).json({
+        message: "Reset token and password are required.",
+      });
+    }
+
+    // Password strength validation
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+      });
+    }
+
+    // Verify reset token
+    let decoded;
+    try {
+      decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
+    } catch (error) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token." });
+    }
+
+    if (decoded.type !== "password_reset") {
+      return res.status(400).json({ message: "Invalid reset token." });
+    }
+
+    // Find user by email from JWT
+    const user = await userModel.findOne({ email: decoded.email });
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found." });
+    }
+
+    // Hash new password
+    const salt = bcrypt.genSaltSync(10);
+    const hashPassword = bcrypt.hashSync(password, salt);
+
+    // Update password
+    user.password = hashPassword;
+    await user.save();
+
+    // Clear the reset token cookie
+    res.clearCookie("reset_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+    });
+
+    res.status(200).json({ message: "Password reset successfully." });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
   }
 };

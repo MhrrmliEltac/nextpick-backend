@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import connectDb from "./config/db.js";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 // import routes
 import authRoutes from "./routes/user.routes.js";
@@ -20,11 +22,14 @@ connectDb();
 
 const app = express();
 
+// Security middleware
+app.use(helmet());
+
 // Middleware
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://next-pick-commerce.vercel.app"],
+    origin: ["https://next-pick-commerce.vercel.app", "http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
