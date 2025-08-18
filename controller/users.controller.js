@@ -253,14 +253,16 @@ export const signOut = async (req, res) => {
   try {
     res.clearCookie("access_token", {
       httpOnly: true,
-      sameSite: "None",
       secure: true,
+      sameSite: "none",
+      maxAge: 0,
     });
 
     res.clearCookie("refresh_token", {
       httpOnly: true,
-      sameSite: "None",
       secure: true,
+      sameSite: "none",
+      maxAge: 0,
     });
 
     return res.status(200).json({ message: "Signed out" });
