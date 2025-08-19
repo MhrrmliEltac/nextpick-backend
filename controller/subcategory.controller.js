@@ -24,6 +24,63 @@ export const createSubCategory = async (req, res) => {
   }
 };
 
+export const bulkCreateSubCategories = async (req, res) => {
+  try {
+    const { subcategories } = req.body;
+
+    if (!subcategories || !Array.isArray(subcategories) || subcategories.length === 0) {
+      return res.status(400).json({ 
+        message: "Subcategories array tələb olunur və boş olmamalıdır" 
+      });
+    }
+
+    // Validate each subcategory in the array
+    for (let i = 0; i < subcategories.length; i++) {
+      const subcategory = subcategories[i];
+      if (!subcategory.subcategoryName || !subcategory.categoryId) {
+        return res.status(400).json({ 
+          message: `Subcategory ${i + 1} üçün subcategoryName və categoryId tələb olunur` 
+        });
+      }
+    }
+
+    // Create all subcategories
+    const createdSubCategories = [];
+    const errors = [];
+
+    for (let i = 0; i < subcategories.length; i++) {
+      try {
+        const { subcategoryName, categoryId, subCategoryImage } = subcategories[i];
+        
+        const newSubCategory = new SubCategoryModel({
+          subcategoryName,
+          categoryId,
+          subCategoryImage,
+        });
+
+        const savedSubCategory = await newSubCategory.save();
+        createdSubCategories.push(savedSubCategory);
+      } catch (error) {
+        errors.push({
+          index: i,
+          subcategoryName: subcategories[i].subcategoryName,
+          error: error.message
+        });
+      }
+    }
+
+    res.status(201).json({
+      message: `${createdSubCategories.length} alt kateqoriya uğurla yaradıldı`,
+      createdSubCategories,
+      errors: errors.length > 0 ? errors : undefined,
+      totalRequested: subcategories.length,
+      totalCreated: createdSubCategories.length
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 export const getAllSubCategories = async (req, res) => {
   try {
     const subcategories = await SubCategoryModel.find().populate(

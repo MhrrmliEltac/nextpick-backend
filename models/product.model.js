@@ -27,6 +27,7 @@ const productSchema = new mongoose.Schema(
       ref: "SubCategory",
       required: false,
     },
+    specifications: { type: Map, of: String, required: false },
     salesCount: { type: Number },
   },
   {
