@@ -1,6 +1,7 @@
 import Category from "../models/category.model.js";
 import Product from "../models/product.model.js";
 import SubCategoryModel from "../models/subcategory.model.js";
+import Favorites from "../models/favorites.model.js";
 
 export const createProduct = async (req, res) => {
   try {
@@ -263,5 +264,63 @@ export const deleteProduct = async (req, res) => {
     res.status(200).json({ message: "Məhsul silindi" });
   } catch (error) {
     res.status(500).json({ message: "Məhsul silinmədi", error });
+  }
+};
+
+// Get products with favorite status for authenticated users
+export const getProductsWithFavoriteStatus = async (req, res) => {
+  try {
+    // Check if user is authenticated via cookie token
+    const userId = req.user?.id; // From JWT token in cookie
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+
+    const totalProducts = await Product.countDocuments();
+
+    const products = await Product.find()
+      .populate("brand", "brandName")
+      .populate("category", "title")
+      .populate("subcategory", "subcategoryName")
+      .skip(skip)
+      .limit(limit);
+
+    // If user is authenticated (has valid cookie token), check favorite status
+    if (userId) {
+      const userFavorites = await Favorites.find({ user: userId }).select('product');
+      const favoriteProductIds = userFavorites.map(fav => fav.product.toString());
+
+      const productsWithFavorites = products.map(product => ({
+        ...product.toObject(),
+        isFavorite: favoriteProductIds.includes(product._id.toString())
+      }));
+
+      return res.status(200).json({
+        products: productsWithFavorites,
+        totalProducts,
+        totalPages: Math.ceil(totalProducts / limit),
+        currentPage: page,
+        limit,
+        userAuthenticated: true,
+      });
+    }
+
+    // If user is not authenticated (no valid cookie token), return products without favorite status
+    const productsWithoutFavorites = products.map(product => ({
+      ...product.toObject(),
+      isFavorite: false
+    }));
+
+    res.status(200).json({
+      products: productsWithoutFavorites,
+      totalProducts,
+      totalPages: Math.ceil(totalProducts / limit),
+      currentPage: page,
+      limit,
+      userAuthenticated: false,
+    });
+  } catch (error) {
+    console.error("Product fetch error:", error);
+    res.status(500).json({ message: "Məhsullar tapılmadı", error });
   }
 };

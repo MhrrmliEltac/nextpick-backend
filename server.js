@@ -3,7 +3,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import connectDb from "./config/db.js";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 
 // import routes
 import authRoutes from "./routes/user.routes.js";
@@ -14,6 +13,7 @@ import blogRoutes from "./routes/blog.routes.js";
 import infoRoutes from "./routes/info.routes.js";
 import subCategoryRoutes from "./routes/subcategory.routes.js";
 import apiKeyRoutes from "./routes/apikey.routes.js";
+import favoritesRoutes from "./routes/favorites.routes.js";
 import { apiKeyMiddleware } from "./middleware/apiKeyMiddleware.js";
 import cookieParser from "cookie-parser";
 
@@ -46,6 +46,7 @@ app.use("/api/blog", blogRoutes);
 app.use("/api/info", infoRoutes);
 app.use("/api/subcategory", subCategoryRoutes);
 app.use("/api/apikey", apiKeyRoutes);
+app.use("/api/favorites", favoritesRoutes);
 
 const PORT = 5000;
 

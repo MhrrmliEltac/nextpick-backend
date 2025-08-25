@@ -9,12 +9,14 @@ import {
   getProductBySubcategory,
   getProductsByCategory,
   updateProduct,
+  getProductsWithFavoriteStatus,
 } from "../controller/product.controller.js";
 
 const router = express.Router();
 
 router.post("/create", createProduct); // Məhsul yaradılması
 router.get("/list", getAllProducts); // Bütün məhsullar
+router.get("/list-with-favorites", getProductsWithFavoriteStatus); // Bütün məhsullar (favori statusu ilə)
 router.get("/productByCategory", getProductsByCategory); // Kateqoriyaya uyğun məhsullar
 router.get("/productBySubCategory", getProductBySubcategory); // Alt kateqoriyaya uyğun məhsullar
 router.get("/search", getProductBySearchQuery); // Search edilerken gelen mehsullar
