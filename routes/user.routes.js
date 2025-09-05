@@ -3,6 +3,7 @@ import { protect } from "../middleware/protectToken.js";
 import {
   forgotPassword,
   profile,
+  refreshAccessToken,
   resetPassword,
   sendOTP,
   signIn,
@@ -21,6 +22,7 @@ router.post("/login", apiKeyMiddleware, signIn);
 router.post("/register", apiKeyMiddleware, signUp);
 router.post("/sign-out", signOut);
 router.post("/forgot-password", apiKeyMiddleware, forgotPassword);
+router.post("/refresh-token", apiKeyMiddleware, refreshAccessToken);
 router.post(
   "/verify-otp-forgot-password",
   apiKeyMiddleware,

@@ -6,11 +6,18 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const cookieOptions = {
+const accessCookieOptions = {
   httpOnly: true,
   secure: true,
   sameSite: "none",
   maxAge: 15 * 60 * 1000,
+};
+
+const refreshCookieOptions = {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  maxAge: 24 * 60 * 60 * 1000,
 };
 
 const transporter = nodemailer.createTransport({
@@ -211,6 +218,7 @@ export const signIn = async (req, res) => {
         email: user.email,
         birthDate: user.birthDate,
         role: user.role,
+        expiresIn: user.expiresIn,
       },
       process.env.JWT_SECRET,
       {
@@ -224,15 +232,15 @@ export const signIn = async (req, res) => {
       },
       process.env.JWT_REFRESH_SECRET,
       {
-        expiresIn: "3d",
+        expiresIn: "24h",
       }
     );
 
     // access token
-    res.cookie("access_token", access_token, cookieOptions);
+    res.cookie("access_token", access_token, accessCookieOptions);
 
     // refresh token
-    res.cookie("refresh_token", refresh_token, cookieOptions);
+    res.cookie("refresh_token", refresh_token, refreshCookieOptions);
 
     res.status(200).json({
       message: "Login successful",
@@ -241,6 +249,7 @@ export const signIn = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        expiresIn: user.expiresIn,
       },
     });
   } catch (error) {
@@ -294,18 +303,44 @@ export const refreshAccessToken = async (req, res) => {
         if (err)
           return res.status(403).json({ message: "Invalid refresh token." });
 
-        const access_token = jwt.sign(
-          {
-            id: decoded.id,
-          },
-          process.env.JWT_REFRESH_SECRET,
-          {
-            expiresIn: "15m",
-          }
-        );
+        (async () => {
+          try {
+            const user = await userModel.findById(decoded.id);
 
-        res.cookie("access_token", access_token, cookieOptions);
-        res.status(200).json({ message: "Access token refreshed." });
+            if (!user) {
+              return res.status(404).json({ message: "User not found." });
+            }
+
+            const access_token = jwt.sign(
+              {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                birthDate: user.birthDate,
+                role: user.role,
+                expiresIn: user.expiresIn,
+              },
+              process.env.JWT_SECRET,
+              {
+                expiresIn: "15m",
+              }
+            );
+
+            res.cookie("access_token", access_token, accessCookieOptions);
+            res.status(200).json({
+              message: "Access token refreshed",
+              user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                expiresIn: user.expiresIn,
+              },
+            });
+          } catch (innerErr) {
+            return res.status(500).json({ message: "Server error" });
+          }
+        })();
       }
     );
   } catch (error) {
@@ -366,7 +401,7 @@ export const verifyOTPForForgotPassword = async (req, res) => {
     await user.save();
 
     // Set reset token as secure cookie
-    res.cookie("reset_token", resetToken, cookieOptions);
+    res.cookie("reset_token", resetToken, accessCookieOptions);
 
     res.status(200).json({
       message: "OTP verified successfully.",
